@@ -1,0 +1,95 @@
+#
+# PIC32MZ target: Whitecat board Model X1 rev 1.A
+#
+# To build the kernel, use:
+#   ../../../usr.sbin/config/config Whitecat.pic32
+#   cd ../../compile/Whitecat.pic32
+#   bmake depend
+#   bmake
+#
+machine         "pic32"
+cpu             "PIC32MZ"
+ident           Whitecat
+
+# Linker script
+ldscript        "pic32/bootloader-chipkit.ld"
+
+# Need to set locally
+timezone        8 dst
+maxusers        2
+
+# Standard system options
+options         SWAPPAGER               # swap pager (anonymous and swap space)
+options         VNODEPAGER              # vnode pager (mapped files)
+options         DEVPAGER                # device pager (mapped devices)
+options         DIAGNOSTIC              # extra kernel debugging checks
+options         DEBUG                   # extra kernel debugging support
+#options        KTRACE                  # system call tracing support
+options         "NKMEMCLUSTERS=64"      # 4K pages in kernel malloc pool, default 128 pages
+options         "NMBCLUSTERS=64"        # 4K pages in network mbuf pool, default 256/512 pages
+options         "NBUF=18"               # Number of i/o buffers (4k), min 16
+options         "BUFPAGES=18"           # Number of i/o pages, default 10% of ram, min 16
+options         "CPU_KHZ=200000"        # Oscillator frequency of CPU core
+options         "HZ=100"                # Frequency of clock interrupt
+
+# Filesystem options
+options         FIFO                    # POSIX fifo support (in all filesystems)
+options         FFS                     # fast filesystem with user and group quotas
+#options        MFS                     # memory-based filesystem
+#options        NFS                     # Sun NFS-compatible filesystem
+options         UNION                   # Union filesystem
+options         KERNFS                  # kernel data-structure filesystem
+options         FDESC                   # user file descriptor filesystem
+options         PROCFS                  # /proc filesystem
+#options        UMAPFS                  # uid/gid remapping filesystem
+#options        NULLFS                  # null layer filesystem
+#options        LFS                     # Log-based filesystem (still experimental)
+#options        PORTAL                  # portal filesystem (still experimental)
+
+# Networking options
+options         INET                    # Internet protocols
+#options        GATEWAY                 # IP packet forwarding
+#options        MULTICAST               # Multicast support
+#options        MROUTING                # Multicast routing support
+
+config          vmunix  root on sd0a
+                        swap on sd0b
+
+# UART configuration
+device          uart1   pins RF4, RF5   # tty1 console
+device          uart2   pins RB7, RB6   # tty2
+device          uart3   pins RC13, RC14 # tty3
+device          uart4   pins RD5, RD4   # tty4
+options         "UART_BAUD=115200"      # initial baud rate
+#options        "UART_BUFSZ=1024"       # Uncomment this to increase the size of the UART buffers
+
+# Console options
+options         "CONS_MAJOR=17"         # UART device
+options         "CONS_MINOR=0"          # UART1 - On board Silabs CP2104 to Serial TTL
+
+# SPI configuration
+controller      spi1    pins RD2, RD3   # sd card
+controller      spi2    pins RG7, RG8
+controller      spi3    pins RB10, RB9  # spi flash
+controller      spi4    pins RD11, RD0
+
+# SD configuration
+disk            sd0     at spi1 pin RF3 # CS not used, mapped to RF3
+signal          "SD_LED"        pin RF3 # SD activity
+
+# General purpose I/O ports
+device      gpio1   flags 0xb13f # port B
+device      gpio4   flags 0x00ff # port E
+
+# Ethernet with enc424j600 not implemented yet
+# ethernet	en0	at spi2
+
+# CANBus not implemented yet
+# controller    can0    pins RF0, RF1
+
+pseudo-device   pty             4       # pseudo ptys
+#pseudo-device  sl              1       # serial line IP interfaces (SLIP)
+#pseudo-device  bpfilter        1       # packet filter ports
+pseudo-device   loop                    # network loopback interface
+pseudo-device   ether                   # generic Ethernet protocol
+pseudo-device   vn                      # block/character interface to a vnode

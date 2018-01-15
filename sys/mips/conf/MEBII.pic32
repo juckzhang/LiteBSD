@@ -1,0 +1,99 @@
+#
+# PIC32MZ target: Microchip Multimedia Expansion Board II
+#
+# To build the kernel, use:
+#   ../../../usr.sbin/config/config MEBII.pic32
+#   cd ../../compile/MEBII.pic32
+#   bmake depend
+#   bmake
+#
+machine         "pic32"
+cpu             "PIC32MZ"
+ident           MEBII
+
+# Linker script
+ldscript        "pic32/bare-mz.ld"
+
+# Need to set locally
+timezone        8 dst
+maxusers        2
+
+# Standard system options
+options         SWAPPAGER               # swap pager (anonymous and swap space)
+options         VNODEPAGER              # vnode pager (mapped files)
+options         DEVPAGER                # device pager (mapped devices)
+options         DIAGNOSTIC              # extra kernel debugging checks
+options         DEBUG                   # extra kernel debugging support
+#options        KTRACE                  # system call tracing support
+options         "NKMEMCLUSTERS=64"      # 4K pages in kernel malloc pool, default 128 pages
+options         "NMBCLUSTERS=64"        # 4K pages in network mbuf pool, default 256/512 pages
+options         "NBUF=18"               # Number of i/o buffers (4k), min 16
+options         "BUFPAGES=18"           # Number of i/o pages, default 10% of ram, min 16
+options         "CPU_KHZ=200000"        # Oscillator frequency of CPU core
+options         "HZ=100"                # Frequency of clock interrupt
+
+# Filesystem options
+options         FIFO            # POSIX fifo support (in all filesystems)
+options         FFS             # fast filesystem with user and group quotas
+#options        MFS             # memory-based filesystem
+#options        NFS             # Sun NFS-compatible filesystem
+options         UNION           # Union filesystem
+options         KERNFS          # kernel data-structure filesystem
+options         FDESC           # user file descriptor filesystem
+options         PROCFS          # /proc filesystem
+#options        UMAPFS          # uid/gid remapping filesystem
+#options        NULLFS          # null layer filesystem
+#options        LFS             # Log-based filesystem (still experimental)
+#options        PORTAL          # portal filesystem (still experimental)
+
+# Networking options
+options         INET            # Internet protocols
+#options        GATEWAY         # IP packet forwarding
+#options        MULTICAST       # Multicast support
+#options        MROUTING        # Multicast routing support
+
+config          vmunix  root on sd0a
+                        swap on sd0b
+
+device          uart1   pins RA14, RA15     # 4,6 at PICtail connector
+# Uncomment this to increase the size of the UART buffers
+#options         "UART_BUFSZ=1024"
+
+# Console options
+options         "CONS_MAJOR=17"         # UART device
+options         "CONS_MINOR=0"          # UART1 - Microchip MEB-II board
+
+controller      spi1    pins RD14, RB10 # audio
+controller      spi2    pins RD7, RG8   # SD card
+controller      spi4    pins RG7, RB3   # Wi-Fi interface
+
+disk            sd0     at spi2 pin RB14
+signal          "SD_LED"        pin RH0 # use LED1 as SD activity
+
+# General purpose I/O ports
+# TODO: exclude uart, spi and ethernet pins
+device          gpio0   flags 0xc6ff    # port A
+device          gpio1   flags 0xffff    # port B
+device          gpio2   flags 0xf01e    # port C
+device          gpio3   flags 0xfeff    # port D
+device          gpio4   flags 0x03ff    # port E
+device          gpio5   flags 0x313f    # port F
+device          gpio6   flags 0xf3c3    # port G
+device          gpio7   flags 0xffff    # port H
+device          gpio8   flags 0xffff    # port J
+device          gpio9   flags 0x00ff    # port K
+
+# Ethernet controller
+controller      en0
+options         "ETHERNET_PHY_ADDR=0"   # PHY address is 0 on LAN8720A and LAN8740A daughter boards
+
+# Buttons
+signal          "BUTTON1"   pin RB12 invert     # SW1, active low
+signal          "BUTTON2"   pin RB13 invert     # SW2, active low
+
+pseudo-device   pty             4       # pseudo ptys
+#pseudo-device   sl              1       # serial line IP interfaces (SLIP)
+#pseudo-device   bpfilter        1       # packet filter ports
+pseudo-device   loop                    # network loopback interface
+pseudo-device   ether                   # generic Ethernet protocol
+pseudo-device   vn                      # block/character interface to a vnode
