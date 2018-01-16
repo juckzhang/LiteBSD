@@ -121,7 +121,7 @@ initclocks()
      * code do its bit.
      */
     psdiv = pscnt = 1;
-    cpu_initclocks();
+    cpu_initclocks();//不知道干啥用
 
     /*
      * Compute profhz/stathz, and fix profhz if needed.

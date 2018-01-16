@@ -46,13 +46,13 @@
  * (not necessarily resident).
  */
 struct  sigacts {
-    sig_t   ps_sigact[NSIG];        /* disposition of signals */
-    sigset_t ps_catchmask[NSIG];    /* signals to be blocked */
-    sigset_t ps_sigonstack;         /* signals to take on sigstack */
-    sigset_t ps_sigintr;            /* signals that interrupt syscalls */
+    sig_t   ps_sigact[NSIG];        /* disposition of signals 信号处理句柄 sigNum => handle*/
+    sigset_t ps_catchmask[NSIG];    /* signals to be blocked 当前信号的阻塞信号集 sigNum => sigset_t*/
+    sigset_t ps_sigonstack;         /* signals to take on sigstack 允许保存在自定义信号栈上的信号集*/
+    sigset_t ps_sigintr;            /* signals that interrupt syscalls 运行系统调用时候中断重入的信号集*/
     sigset_t ps_oldmask;            /* saved mask from before sigpause */
     int     ps_flags;               /* signal flags, below */
-    struct  sigaltstack ps_sigstk;  /* sp & on stack state variable */
+    struct  sigaltstack ps_sigstk;  /* sp & on stack state variable 信号栈结构(栈地址，大小)*/
     int     ps_sig;                 /* for core dump/debugger XXX */
     long    ps_code;                /* for core dump/debugger XXX */
     long    ps_addr;                /* for core dump/debugger XXX */

@@ -117,22 +117,28 @@ main(framep)
     /*
      * Initialize the current process pointer (curproc) before
      * any possible traps/probes to simplify trap processing.
+     * 在处理陷阱之前初始化当前进程指针
      */
     p = &proc0;
     curproc = p;
     /*
      * Attempt to find console and initialize
      * in case of early panic or other messages.
+     * 1、初始化cpuspeed
+     * 2、初始化设备硬件类型
+     * 3、初始化终端控制器的几个函数句柄（cn_probe，cn_init，cn_getc，cn_putc）
+     *    并调用终端控制器的init函数
      */
     consinit();
     printf(copyright);
 
-    vm_mem_init();
-    kmeminit();
-    cpu_startup();
+    vm_mem_init();//虚拟内存初始化
+    kmeminit();//内核内存初始化
+    cpu_startup();//启动cpu
 
     /*
      * Initialize process and pgrp structures.
+     * 初始化 allproc、zombproc队列
      */
     procinit();
 
@@ -200,22 +206,23 @@ main(framep)
 
     /*
      * Charge root for one process.
+     * 修改当前用户拥有的进程数量
      */
     (void)chgproccnt(0, 1);
 
-    rqinit();
+    rqinit();//初始化可运行进程队列
 
     /* Configure virtual memory system, set vm rlimits. */
     vm_init_limits(p);
 
-    /* Initialize the file systems. */
+    /* Initialize the file systems. 虚拟文件系统初始化*/
     vfsinit();
 
-    /* Start real time and statistics clocks. */
+    /* Start real time and statistics clocks. 初始化统计定时器*/
     initclocks();
 
     /* Initialize mbuf's. */
-    mbinit();
+    mbinit();//初始化mbuf链表 在网络通信中常用到mbuf
 
     /* Initialize clists. */
     clist_init();

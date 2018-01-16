@@ -79,17 +79,17 @@ struct  pgrp {
  * is running.
  */
 struct  proc {
-    struct  proc *p_forw;       /* Doubly-linked run/sleep queue. */
-    struct  proc *p_back;
+    struct  proc *p_forw;       //这个指针没搞懂/* Doubly-linked run/sleep queue. */
+    struct  proc *p_back; //下一个可运行进程（或者sleep进程）
     LIST_ENTRY(proc) p_list;    /* List of all processes. */
 
     /* substructures: */
-    struct  pcred *p_cred;      /* Process owner's identity. */
-    struct  filedesc *p_fd;     /* Ptr to open files structure. */
-    struct  pstats *p_stats;    /* Accounting/statistics (PROC ONLY). */
-    struct  plimit *p_limit;    /* Process limits. */
-    struct  vmspace *p_vmspace; /* Address space. */
-    struct  sigacts *p_sigacts; /* Signal actions, state (PROC ONLY). */
+    struct  pcred *p_cred;      /* Process owner's identity. 用户身份信息*/
+    struct  filedesc *p_fd;     /* Ptr to open files structure. 当前进程打开的文件信息*/
+    struct  pstats *p_stats;    /* Accounting/statistics (PROC ONLY). 统计信息*/
+    struct  plimit *p_limit;    /* Process limits. 资源限制信息*/
+    struct  vmspace *p_vmspace; /* Address space. 虚拟地址空间分配管理结构*/
+    struct  sigacts *p_sigacts; /* Signal actions, state (PROC ONLY). 信号*/
 
 #define p_ucred     p_cred->pc_ucred
 #define p_rlimit    p_limit->pl_rlimit

@@ -78,7 +78,10 @@ void stop __P((struct proc *p));
         (pc)->pc_ucred->cr_uid == (q)->p_ucred->cr_uid || \
         ((signum) == SIGCONT && (q)->p_session == (p)->p_session))
 
-/* ARGSUSED */
+/* 
+* 设置一个自定义信号处理器
+* 同时也可以设置当前信号发生时的阻塞信号集
+*/
 int
 sigaction(p, uap, retval)
     struct proc *p;
@@ -97,19 +100,19 @@ sigaction(p, uap, retval)
 
     signum = SCARG(uap, signum);
     if (signum <= 0 || signum >= NSIG ||
-        signum == SIGKILL || signum == SIGSTOP)
+        signum == SIGKILL || signum == SIGSTOP)//SIGKILL SIGSTOP信号不可自定义
         return (EINVAL);
     sa = &vec;
     if (SCARG(uap, osa)) {
         sa->sa_handler = ps->ps_sigact[signum];
         sa->sa_mask = ps->ps_catchmask[signum];
-        bit = sigmask(signum);
+        bit = sigmask(signum);//信号掩码 1 << (signum - 1)
         sa->sa_flags = 0;
-        if ((ps->ps_sigonstack & bit) != 0)
+        if ((ps->ps_sigonstack & bit) != 0)//判断是否允许将信号存放在私有信号栈上
             sa->sa_flags |= SA_ONSTACK;
-        if ((ps->ps_sigintr & bit) == 0)
+        if ((ps->ps_sigintr & bit) == 0)//是否允许系统调用中断重入
             sa->sa_flags |= SA_RESTART;
-        if (p->p_flag & P_NOCLDSTOP)
+        if (p->p_flag & P_NOCLDSTOP)//忽略子进程暂停（退出信息）
             sa->sa_flags |= SA_NOCLDSTOP;
         error = copyout((caddr_t)sa, (caddr_t)SCARG(uap, osa), sizeof (vec));
         if (error)
@@ -148,7 +151,7 @@ setsigvec(p, signum, sa)
         ps->ps_sigonstack |= bit;
     else
         ps->ps_sigonstack &= ~bit;
-#ifdef COMPAT_SUNOS
+#ifdef COMPAT_SUNOS//兼容sunos系统
     if (sa->sa_flags & SA_USERTRAMP)
         ps->ps_usertramp |= bit;
     else
@@ -166,13 +169,13 @@ setsigvec(p, signum, sa)
      * However, don't put SIGCONT in p_sigignore,
      * as we have to restart the process.
      */
-    if (sa->sa_handler == SIG_IGN ||
+    if (sa->sa_handler == SIG_IGN ||//设置忽略此信号
         (sigprop[signum] & SA_IGNORE && sa->sa_handler == SIG_DFL)) {
         p->p_siglist &= ~bit;       /* never to be seen again */
         if (signum != SIGCONT)
             p->p_sigignore |= bit;  /* easier in psignal */
         p->p_sigcatch &= ~bit;
-    } else {
+    } else {//设置允许用户捕捉此信号
         p->p_sigignore &= ~bit;
         if (sa->sa_handler == SIG_DFL)
             p->p_sigcatch &= ~bit;
@@ -185,6 +188,8 @@ setsigvec(p, signum, sa)
 /*
  * Initialize signal state for process 0;
  * set to ignore signals that are ignored by default.
+ * 将默认行为为忽略的信号加入到p->p_sigignore集合中
+ * 此方法只在系统启动时调用一次参见hern/kern_main.c
  */
 void
 siginit(p)
@@ -199,6 +204,8 @@ siginit(p)
 
 /*
  * Reset signals for an exec of the specified process.
+ * 1、将p_sigcatch信号集重置
+ * 2、如果定义了私有信号栈，重置信号栈
  */
 void
 execsigs(p)
@@ -238,6 +245,7 @@ execsigs(p)
  * Note that we receive new mask, not pointer,
  * and return old mask as return value;
  * the library stub does the rest.
+ * 1、设置当前进程的阻塞信号集（合并原有阻塞信号集、清除某信号、重新设置阻塞信号集）
  */
 int
 sigprocmask(p, uap, retval)
@@ -274,7 +282,9 @@ sigprocmask(p, uap, retval)
     return (error);
 }
 
-/* ARGSUSED */
+/*
+* 获取当前进程的未决信号集，所谓未决信号集指的是已发生但是还没处理的信号集
+*/
 int
 sigpending(p, uap, retval)
     struct proc *p;
@@ -290,6 +300,7 @@ sigpending(p, uap, retval)
  * Suspend process until signal, providing mask to be set
  * in the meantime.  Note nonstandard calling convention:
  * libc stub passes mask, not pointer, to save a copyin.
+ * 暂停当前进程，直到有一个非阻塞信号到达，同时可以设置一个新的阻塞信号集代替原集合
  */
 /* ARGSUSED */
 int
@@ -318,7 +329,11 @@ sigsuspend(p, uap, retval)
     return (EINTR);
 }
 
-/* ARGSUSED */
+/*
+* 定义一个私有的信号栈
+* 之所以提供此功能是因为，默认情况下，信号栈和用户栈共用同一个，而用户栈空间
+* 有限，当用户栈满了之后，信号会丢失。
+*/
 int
 sigaltstack(p, uap, retval)
     struct proc *p;
@@ -360,6 +375,7 @@ sigaltstack(p, uap, retval)
 /*
  * Common code for kill process group/broadcast kill.
  * cp is calling process.
+ * 给指定进程组发送信号。
  */
 static int
 killpg1(cp, signum, pgid, all)
@@ -408,7 +424,9 @@ killpg1(cp, signum, pgid, all)
     return (nfound ? 0 : ESRCH);
 }
 
-/* ARGSUSED */
+/*
+* 给指定进程或进程组发送信号
+*/
 int
 kill(cp, uap, retval)
     register struct proc *cp;
@@ -460,6 +478,7 @@ gsignal(pgid, signum)
 /*
  * Send a signal to a process group.  If checktty is 1,
  * limit to members which have a controlling terminal.
+ * 给指定进程组发送信号，此功能可以通过设置checkctty来指定只给有控制终端的进程组发送信号
  */
 void
 pgsignal(pgrp, signum, checkctty)
@@ -479,6 +498,7 @@ pgsignal(pgrp, signum, checkctty)
  * Send a signal caused by a trap to the current process.
  * If it will be caught immediately, deliver it with correct code.
  * Otherwise, post it normally.
+ * 发送一个由陷阱引起的信号
  */
 void
 trapsignal(p, signum, code)
@@ -519,6 +539,9 @@ trapsignal(p, signum, code)
  *     regardless of the signal action (eg, blocked or ignored).
  *
  * Other ignored signals are discarded immediately.
+ * 发送信号的底层封装，上面那些发送信号的函数最终都是调用的此函数
+ * 发送信号的过程中大部分情况下，只是在接收信号的进程中将此信号放入未觉信号集
+ * 如果是一些可以提前处理的信号。此方法也会提前处理掉。比如：目标进程设置忽略此信号，此方法就直接返回了。
  */
 void
 psignal(p, signum)
@@ -624,6 +647,10 @@ psignal(p, signum)
             /*
              * If a child holding parent blocked,
              * stopping could cause deadlock.
+             * 如果当前进程状态是SLEEP.而发送的信号会使进程STOP掉，
+             * 并且进程标记为父进程在等待自己进程运行，此时就不能处理此信号
+             * 否则就会造成死锁的问题。（父进程一直等待子进程运行，而子进程又一直在等待父进程
+             * 给它一个SIGCONT的信号，让子进程继续运行）
              */
             if (p->p_flag & P_PPWAIT)
                 goto out;
@@ -698,19 +725,19 @@ psignal(p, signum)
          * It will either never be noticed, or noticed very soon.
          */
         if (p == curproc)
-            signotify(p);
+            signotify(p);//astpeeding++;
         goto out;
     }
     /*NOTREACHED*/
 
 runfast:
     /*
-     * Raise priority to at least PUSER.
+     * 提升进程的优先级到至少PUSER
      */
     if (p->p_priority > PUSER)
         p->p_priority = PUSER;
 run:
-    setrunnable(p);
+    setrunnable(p);//将进程放入可运行队列
 out:
     splx(s);
 }
@@ -726,6 +753,9 @@ out:
  *
  *  while (signum = CURSIG(curproc))
  *      postsig(signum);
+ * 检测进程是否有未处理的信号。如果有分两种情况处理。
+ * 提前能处理掉的先处理掉。不能处理掉的返回信号码交给函数调用者自行处理
+ * 一般都是postsig函数调用它。
  */
 int
 issignal(p)
@@ -875,6 +905,7 @@ issignal(p)
  * Put the argument process into the stopped state and notify the parent
  * via wakeup.  Signals are handled elsewhere.  The process must not be
  * on the run queue.
+ * 将当前进程暂停掉，并同时唤醒父进程
  */
 void
 stop(p)
@@ -889,6 +920,7 @@ stop(p)
 /*
  * Take the action for the specified signal
  * from the current set of pending signals.
+ * 信号投放
  */
 void
 postsig(signum)
@@ -953,12 +985,14 @@ postsig(signum)
             ps->ps_code = 0;
             ps->ps_sig = 0;
         }
-        sendsig(action, signum, returnmask, code);
+        sendsig(action, signum, returnmask, code);//将栈指针指向信号栈，待进程下次运行时，调用信号处理函数
     }
 }
 
 /*
  * Kill the current process for stated reason.
+ * 杀死一个进程，此函数最终调用的是psignal(p,SIGKILL)
+ * 给目标进程发送一个SIGKILL信号
  */
 void
 killproc(p, why)
@@ -985,7 +1019,7 @@ sigexit(p, signum)
     int signum;
 {
 
-    p->p_acflag |= AXSIG;
+    p->p_acflag |= AXSIG;//标记进程是由于某个信号而引起的终止
     if (sigprop[signum] & SA_CORE) {
         p->p_sigacts->ps_sig = signum;
         if (coredump(p) == 0)
