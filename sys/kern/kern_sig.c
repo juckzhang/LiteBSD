@@ -69,6 +69,10 @@ void stop __P((struct proc *p));
 
 /*
  * Can process p, with pcred pc, send the signal signum to process q?
+ * 判断用户pc在进程p中是否可以给进程q发送信号signum
+ * 1、超级用户可以给任意进程发送信号
+ * 2、进程属于同一个用户时候，可以发送。
+ * 3、如果是SIGCONT信号，并且进程p与进程q在同一个会话中
  */
 #define CANSIGNAL(p, pc, q, signum) \
     ((pc)->pc_ucred->cr_uid == 0 || \
