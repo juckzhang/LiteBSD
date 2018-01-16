@@ -98,18 +98,19 @@
     } \
 }
 
-int stathz;
-int profhz;
-int profprocs;
+int stathz;//资源统计频率
+int profhz;//进程资源定时器的统计频率
+int profprocs;//表示开启了资源定时器的进程数量
 int ticks;
 static int psdiv, pscnt;    /* prof => stat divider */
 int psratio;        /* ratio: prof / stat */
 
-volatile struct timeval time;
+volatile struct timeval time;//一个系统时间
 volatile struct timeval mono_time;
 
 /*
  * Initialize clock frequencies and start both clocks running.
+ * 初始化时钟频率启动两个定时器
  */
 void
 initclocks()
@@ -121,7 +122,7 @@ initclocks()
      * code do its bit.
      */
     psdiv = pscnt = 1;
-    cpu_initclocks();//不知道干啥用
+    cpu_initclocks();//貌似是设置硬件的时钟频率（触发硬件时钟中断的频率）
 
     /*
      * Compute profhz/stathz, and fix profhz if needed.
@@ -134,6 +135,14 @@ initclocks()
 
 /*
  * The real-time timer, interrupting hz times per second.
+ * 任务的快速处理，来保证在下一次硬件时钟超时时能及时处理。
+ * 硬件时钟定时器，主要干以下几件事:
+ * 1、将定时任务队列calltodo中的第一个元素的时间减1，
+ * 2、如果是用户模式下，修改ITIMER_VIRTUAL定时器的值
+ * 3、修改ITIMER_PROF定时器的值
+ * 4、当前进程的资源统计
+ * 5、修改系统时间time
+ * 6、如果软件时钟任务队列有超时，降低终端等级，处理软定时器
  */
 void
 hardclock(frame)
@@ -221,6 +230,12 @@ hardclock(frame)
 /*
  * Software (low priority) clock interrupt.
  * Run periodic events from timeout queue.
+ * 软件时钟定时器，优先级低于硬件时钟定时器。
+ * 循环遍历callout定时器队列，将已超时的任务取出执行。并同时将结构体放入callfree队列。
+ * 当添加一个定时器时，会从callfree队列中分配一块内存。
+ * 小技巧：callout队列中，下一个的超时时间保存的是与前一个的差值。这样在hardwork中维护超时时间时，
+ * 只需要递减第一个元素的时间即可。
+ * 由此可知，callout队列是一个按照时间递增的队列。
  */
 /*ARGSUSED*/
 void
@@ -256,6 +271,7 @@ softclock()
  *  implementation differs from that one in that no identification
  *  value is returned from timeout, rather, the original arguments
  *  to timeout are used to identify entries for untimeout.
+ * 添加定时器 从callfree队列中获取一个元素，设置新的定时器参数，并加入到callout队列中
  */
 void
 timeout(ftn, arg, ticks)
@@ -302,8 +318,10 @@ timeout(ftn, arg, ticks)
     splx(s);
 }
 
-void
-untimeout(ftn, arg)
+/*
+* 取消定时器
+*/
+void untimeout(ftn, arg)
     void (*ftn) __P((void *));
     void *arg;
 {

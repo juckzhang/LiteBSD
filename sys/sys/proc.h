@@ -94,30 +94,30 @@ struct  proc {
 #define p_ucred     p_cred->pc_ucred
 #define p_rlimit    p_limit->pl_rlimit
 
-    int     p_flag;             /* P_* flags. */
+    int     p_flag;             /* P_* flags. 进程标志 往往需要结合p_stat一起使用*/
     char    p_stat;             /* S* process status. */
     char    p_pad1[3];
 
-    pid_t   p_pid;              /* Process identifier. */
-    LIST_ENTRY(proc) p_pglist;  /* List of processes in pgrp. */
-    struct  proc *p_pptr;       /* Pointer to parent process. */
-    LIST_ENTRY(proc) p_sibling; /* List of sibling processes. */
-    LIST_HEAD(, proc) p_children; /* Pointer to list of children. */
+    pid_t   p_pid;              /* Process identifier. 进程id*/
+    LIST_ENTRY(proc) p_pglist;  /* List of processes in pgrp. 维护进程组中上一个与下一个进程的指针*/
+    struct  proc *p_pptr;       /* Pointer to parent process. 父进程指针*/
+    LIST_ENTRY(proc) p_sibling; /* 维护同属一个服务进程的兄弟进程指针 */
+    LIST_HEAD(, proc) p_children; /* 子进程指针 */
 
 /* The following fields are all zeroed upon creation in fork. */
-#define p_startzero p_oppid
+#define p_startzero p_oppid //从此地方开始 当fork一个进程时，子进程会清零的值
 
-    pid_t   p_oppid;            /* Save parent pid during ptrace. XXX */
+    pid_t   p_oppid;            /* Save parent pid during ptrace. 保存在跟踪调试时的父进程idXXX */
     int     p_dupfd;            /* Sideways return value from fdopen. XXX */
 
     /* scheduling */
-    u_int   p_estcpu;           /* Time averaged value of p_cpticks. */
-    int     p_cpticks;          /* Ticks of cpu time. */
-    fixpt_t p_pctcpu;           /* %cpu for this process during p_swtime */
-    void    *p_wchan;           /* Sleep address. */
-    char    *p_wmesg;           /* Reason for sleep. */
-    u_int   p_swtime;           /* Time swapped in or out. */
-    u_int   p_slptime;          /* Time since last blocked. */
+    u_int   p_estcpu;           /* 平均cpu使用时间 */
+    int     p_cpticks;          /* cpu的时钟频率 */
+    fixpt_t p_pctcpu;           /* %cpu for this process during p_swtime 在换入换出时，cpu使用率*/
+    void    *p_wchan;           /* Sleep address. 进程休眠地址*/
+    char    *p_wmesg;           /* Reason for sleep. 休眠原因*/
+    u_int   p_swtime;           /* Time swapped in or out. 换入换出使用时间*/
+    u_int   p_slptime;          /* Time since last blocked. 最近被阻塞的时间*/
 
     struct  itimerval p_realtimer;  /* Alarm timer. */
     struct  timeval p_rtime;    /* Real time. */
@@ -128,16 +128,16 @@ struct  proc {
     int     p_traceflag;        /* Kernel trace points. */
     struct  vnode *p_tracep;    /* Trace to vnode. */
 
-    int     p_siglist;          /* Signals arrived but not delivered. */
+    int     p_siglist;          /* Signals arrived but not delivered. 进程的未决信号集*/
 
-    struct  vnode *p_textvp;    /* Vnode of executable. */
+    struct  vnode *p_textvp;    /* Vnode of executable. 指向进程代码段的指针*/
 
-    short   p_locks;            /* DEBUG: lockmgr count of held locks */
-    short   p_simple_locks;     /* DEBUG: count of held simple locks */
-    long    p_spare[2];         /* pad to 256, avoid shifting eproc. */
+    short   p_locks;            /* DEBUG: lockmgr count of held locks 进程当前持有的锁数量*/
+    short   p_simple_locks;     /* DEBUG: count of held simple locks 进程当前持有的简单锁数量*/
+    long    p_spare[2];         /* pad to 256, avoid shifting eproc. 避免栈溢出的备用空间？？*/
 
 /* End area that is zeroed on creation. */
-#define p_endzero   p_hash.le_next
+#define p_endzero   p_hash.le_next //清零结束
 
     /*
      * Not copied, not zero'ed.
@@ -146,7 +146,7 @@ struct  proc {
     LIST_ENTRY(proc) p_hash;    /* Hash chain. */
 
 /* The following fields are all copied upon creation in fork. */
-#define p_startcopy p_sigmask
+#define p_startcopy p_sigmask //此地方开始，fork一个进程时候，子进程会复制父进程的值
 
     sigset_t p_sigmask;         /* Current signal mask. */
     sigset_t p_sigignore;       /* Signals being ignored. */
@@ -166,41 +166,41 @@ struct  proc {
     struct  user *p_addr;       /* Kernel virtual addr of u-area (PROC ONLY). */
     struct  mdproc p_md;        /* Any machine-dependent fields. */
 
-    u_short p_xstat;            /* Exit status for wait; also stop signal. */
-    u_short p_acflag;           /* Accounting flags. */
-    struct  rusage *p_ru;       /* Exit information. XXX */
+    u_short p_xstat;            /* Exit status for wait; also stop signal. 进程退出时的状态*/
+    u_short p_acflag;           /* Accounting flags. 标记退出的原因*/
+    struct  rusage *p_ru;       /* Exit information. XXX 退出时候的进程统计信息*/
 };
 
 #define p_session   p_pgrp->pg_session
 #define p_pgid      p_pgrp->pg_id
 
 /* Status values. */
-#define SIDL    1       /* Process being created by fork. */
-#define SRUN    2       /* Currently runnable. */
-#define SSLEEP  3       /* Sleeping on an address. */
-#define SSTOP   4       /* Process debugging or suspension. */
-#define SZOMB   5       /* Awaiting collection by parent. */
+#define SIDL    1       /* Process being created by fork. 进程被fork创建*/
+#define SRUN    2       /* Currently runnable. 可运行*/
+#define SSLEEP  3       /* Sleeping on an address. 等待某个事件的完成而休眠*/
+#define SSTOP   4       /* Process debugging or suspension. 被信号或父进程设置为暂停*/
+#define SZOMB   5       /* Awaiting collection by parent. 进程退出，等待父进程接收退出信息*/
 
 /* These flags are kept in p_flags. */
 #define P_ADVLOCK   0x00001 /* Process may hold a POSIX advisory lock. */
-#define P_CONTROLT  0x00002 /* Has a controlling terminal. */
-#define P_INMEM     0x00004 /* Loaded into memory. */
-#define P_NOCLDSTOP 0x00008 /* No SIGCHLD when children stop. */
-#define P_PPWAIT    0x00010 /* Parent is waiting for child to exec/exit. */
+#define P_CONTROLT  0x00002 /* 标记进程有控制终端*/
+#define P_INMEM     0x00004 /* 进程已经被加载到内存中*/
+#define P_NOCLDSTOP 0x00008 /* 子进程退出时，不发送SIGCHLD信号*/
+#define P_PPWAIT    0x00010 /* 在子进程中标记父进程在等待子进程执行或者退出*/
 #define P_PROFIL    0x00020 /* Has started profiling. */
 #define P_SELECT    0x00040 /* Selecting; wakeup/waiting danger. */
-#define P_SINTR     0x00080 /* Sleep is interruptible. */
+#define P_SINTR     0x00080 /* 标记进程休眠被中断*/
 #define P_SUGID     0x00100 /* Had set id privileges since last exec. */
-#define P_SYSTEM    0x00200 /* System proc: no sigs, stats or swapping. */
-#define P_TIMEOUT   0x00400 /* Timing out during sleep. */
-#define P_TRACED    0x00800 /* Debugged process being traced. */
-#define P_WAITED    0x01000 /* Debugging process has waited for child. */
-#define P_WEXIT     0x02000 /* Working on exiting. */
-#define P_EXEC      0x04000 /* Process called exec. */
+#define P_SYSTEM    0x00200 /* 标记为系统进程（系统进程不接收信号，不统计资源信息，也不会被换出） */
+#define P_TIMEOUT   0x00400 /* 休眠超时 */
+#define P_TRACED    0x00800 /* 标记进程被跟踪调试 */
+#define P_WAITED    0x01000 /* 标记一个debug进程在等待子进程*/
+#define P_WEXIT     0x02000 /* 正在退出 */
+#define P_EXEC      0x04000 /* Process called exec. 已执行*/
 
 /* Should probably be changed into a hold count. */
-#define P_NOSWAP    0x08000 /* Another flag to prevent swap out. */
-#define P_PHYSIO    0x10000 /* Doing physical I/O. */
+#define P_NOSWAP    0x08000 /* 标记进程不能被换出 */
+#define P_PHYSIO    0x10000 /* 标记进程正在处理物理I/O操作 */
 
 /* Should be moved to machine-dependent areas. */
 #define P_OWEUPC    0x20000 /* Owe process an addupc() call at next ast. */
@@ -213,12 +213,12 @@ struct  proc {
  * used to change ids.
  */
 struct  pcred {
-    struct  ucred *pc_ucred;    /* Current credentials. */
-    uid_t   p_ruid;             /* Real user id. */
-    uid_t   p_svuid;            /* Saved effective user id. */
-    gid_t   p_rgid;             /* Real group id. */
-    gid_t   p_svgid;            /* Saved effective group id. */
-    int     p_refcnt;           /* Number of references. */
+    struct  ucred *pc_ucred;    /* Current credentials. 当前用户身份*/
+    uid_t   p_ruid;             /* 真实用户id*/
+    uid_t   p_svuid;            /* 保存的有效用户id */
+    gid_t   p_rgid;             /* 真实组id */
+    gid_t   p_svgid;            /* 保存的有效组id */
+    int     p_refcnt;           /* Number of references. 引用计数器*/
 };
 
 #ifdef KERNEL
@@ -253,7 +253,7 @@ extern struct proclist allproc;     /* List of all processes. */
 extern struct proclist zombproc;    /* List of zombie processes. */
 struct proc *initproc, *pageproc;   /* Process slots for init, pager. */
 
-#define NQS 32              /* 32 run queues. */
+#define NQS 32              /* 32 run queues. 可运行对列有32个，根据进程优先级/4来进程分组*/
 int whichqs;                /* Bit mask summary of non-empty Q's. */
 struct  prochd {
     struct  proc *ph_link;          /* Linked list of running processes. */

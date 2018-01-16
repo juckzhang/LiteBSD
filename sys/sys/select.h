@@ -41,7 +41,7 @@
  * notified when I/O becomes possible.
  */
 struct selinfo {
-    pid_t   si_pid;         /* process to be notified */
+    pid_t   si_pid;         /* process to be notified 将被通知的进程id*/
     short   si_flags;       /* see below */
 };
 #define SI_COLL 0x0001      /* collision occurred */

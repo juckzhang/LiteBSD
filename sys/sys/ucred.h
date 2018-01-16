@@ -40,10 +40,10 @@
  * Credentials.
  */
 struct ucred {
-    u_short cr_ref;             /* reference count */
-    uid_t   cr_uid;             /* effective user id */
-    short   cr_ngroups;         /* number of groups */
-    gid_t   cr_groups[NGROUPS]; /* groups */
+    u_short cr_ref;             /* reference count 引用计数器*/
+    uid_t   cr_uid;             /* effective user id 有效用户id*/
+    short   cr_ngroups;         /* number of groups 此用户id在多少个用户组中*/
+    gid_t   cr_groups[NGROUPS]; /* groups 用户组id集合*/
 };
 #define cr_gid cr_groups[0]
 #define NOCRED ((struct ucred *)0)  /* no credential available */

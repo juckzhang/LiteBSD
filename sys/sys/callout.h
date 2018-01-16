@@ -39,10 +39,10 @@
  */
 
 struct callout {
-    struct  callout *c_next;            /* next callout in queue */
-    void    *c_arg;                     /* function argument */
-    void    (*c_func) __P((void *));    /* function to call */
-    int     c_time;                     /* ticks to the event */
+    struct  callout *c_next;            /* 下一个元素 */
+    void    *c_arg;                     /* 函数参数 */
+    void    (*c_func) __P((void *));    /* 调用的函数 */
+    int     c_time;                     /* 超时时间 */
 };
 
 #ifdef KERNEL
