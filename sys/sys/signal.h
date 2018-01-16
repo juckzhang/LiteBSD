@@ -47,58 +47,58 @@
 
 #include <machine/signal.h> /* sigcontext; codes for SIGILL, SIGFPE */
 
-#define SIGHUP  1       /* hangup */
-#define SIGINT  2       /* interrupt */
-#define SIGQUIT 3       /* quit */
-#define SIGILL  4       /* illegal instruction (not reset when caught) */
+#define SIGHUP  1       /* 终端退出信号*/
+#define SIGINT  2       /* 中断信号（程序终止 ctrl+c）*/
+#define SIGQUIT 3       /* 和SIGINT类似, 但由QUIT字符(通常是Ctrl-\)来控制 */
+#define SIGILL  4       /* 非法指令信号*/
 #ifndef _POSIX_SOURCE
-#define SIGTRAP 5       /* trace trap (not reset when caught) */
+#define SIGTRAP 5       /* trace trap (not reset when caught) 跟踪陷阱*/
 #endif
 #define SIGABRT 6       /* abort() */
 #ifndef _POSIX_SOURCE
-#define SIGIOT  SIGABRT /* compatibility */
+#define SIGIOT  SIGABRT /* compatibility 终止一个程序*/
 #define SIGEMT  7       /* EMT instruction */
 #endif
-#define SIGFPE  8       /* floating point exception */
+#define SIGFPE  8       /* 浮点异常 */
 #define SIGKILL 9       /* kill (cannot be caught or ignored) */
 #ifndef _POSIX_SOURCE
-#define SIGBUS  10      /* bus error */
+#define SIGBUS  10      /* 总线错误 */
 #endif
-#define SIGSEGV 11      /* segmentation violation */
+#define SIGSEGV 11      /* 段溢出 */
 #ifndef _POSIX_SOURCE
-#define SIGSYS  12      /* bad argument to system call */
+#define SIGSYS  12      /* 系统调用时，错误的参数 */
 #endif
-#define SIGPIPE 13      /* write on a pipe with no one to read it */
-#define SIGALRM 14      /* alarm clock */
+#define SIGPIPE 13      /* 在一个没有读对象的管道上写数据 */
+#define SIGALRM 14      /* 闹钟信号 */
 #define SIGTERM 15      /* software termination signal from kill */
 #ifndef _POSIX_SOURCE
 #define SIGURG  16      /* urgent condition on IO channel */
 #endif
-#define SIGSTOP 17      /* sendable stop signal not from tty */
-#define SIGTSTP 18      /* stop signal from tty */
-#define SIGCONT 19      /* continue a stopped process */
-#define SIGCHLD 20      /* to parent on child stop or exit */
-#define SIGTTIN 21      /* to readers pgrp upon background tty read */
-#define SIGTTOU 22      /* like TTIN for output if (tp->t_local&LTOSTOP) */
+#define SIGSTOP 17      /* 非终端暂停信号 */
+#define SIGTSTP 18      /* 终端暂停信号 */
+#define SIGCONT 19      /* 使一个stop状态的进程继续运行 */
+#define SIGCHLD 20      /* 子进程退出信号 */
+#define SIGTTIN 21      /* 脱离终端的读 */
+#define SIGTTOU 22      /* 脱离终端的写 */
 #ifndef _POSIX_SOURCE
-#define SIGIO   23      /* input/output possible signal */
-#define SIGXCPU 24      /* exceeded CPU time limit */
-#define SIGXFSZ 25      /* exceeded file size limit */
-#define SIGVTALRM 26    /* virtual time alarm */
-#define SIGPROF 27      /* profiling time alarm */
-#define SIGWINCH 28     /* window size changes */
-#define SIGINFO 29      /* information request */
+#define SIGIO   23      /* IO完成信号 */
+#define SIGXCPU 24      /* cpu时间片段用完 */
+#define SIGXFSZ 25      /* 文件大小超过限制 */
+#define SIGVTALRM 26    /* 虚拟时钟定时器（只在用户模式下修改定时器的值） */
+#define SIGPROF 27      /* 定时器（在内核模式与用户模式下都会修改定时器的值） */
+#define SIGWINCH 28     /* 窗口大小改变信号 */
+#define SIGINFO 29      /* 信息请求新信号 */
 #endif
-#define SIGUSR1 30      /* user defined signal 1 */
-#define SIGUSR2 31      /* user defined signal 2 */
+#define SIGUSR1 30      /* 用户自定义信号 */
+#define SIGUSR2 31      /* 用户自定义信号 */
 
 #if defined(_ANSI_SOURCE) || defined(__cplusplus)
 /*
  * Language spec sez we must list exactly one parameter, even though we
  * actually supply three.  Ugh!
  */
-#define SIG_DFL     (void (*)(int))0
-#define SIG_IGN     (void (*)(int))1
+#define SIG_DFL     (void (*)(int))0 //默认处理
+#define SIG_IGN     (void (*)(int))1 //忽略信号
 #define SIG_ERR     (void (*)(int))-1
 #else
 #define SIG_DFL     (void (*)())0
@@ -113,26 +113,30 @@ typedef unsigned int sigset_t;
  * Signal vector "template" used in sigaction call.
  */
 struct  sigaction {
-    void    (*sa_handler)(int); /* signal handler */
-    sigset_t sa_mask;           /* signal mask to apply */
+    //信号处理句柄 接收的参数为signum
+    void    (*sa_handler)(int);
+	//当前信号发送时，可以阻塞的信号集合
+	//判断阻塞集时候会将此集合与p->p_sigmask合并
+    sigset_t sa_mask;           
+	//信号标志：参见下面
     int     sa_flags;           /* see signal options below */
 };
 #ifndef _POSIX_SOURCE
-#define SA_ONSTACK  0x0001      /* take signal on signal stack */
-#define SA_RESTART  0x0002      /* restart system on signal return */
+#define SA_ONSTACK  0x0001      /* 将信号放入私有信号栈中 */
+#define SA_RESTART  0x0002      /* 设置信号为允许系统调用时中断重入 */
 #define SA_DISABLE  0x0004      /* disable taking signals on alternate stack */
 #ifdef COMPAT_SUNOS
 #define SA_USERTRAMP    0x0100  /* do not bounce off kernel's sigtramp */
 #endif
 #endif
-#define SA_NOCLDSTOP    0x0008  /* do not generate SIGCHLD on child stop */
+#define SA_NOCLDSTOP    0x0008  /* 子进程暂停或者退出时，不发送SIGCHLD信号 */
 
 /*
  * Flags for sigprocmask:
  */
-#define SIG_BLOCK   1   /* block specified signal set */
-#define SIG_UNBLOCK 2   /* unblock specified signal set */
-#define SIG_SETMASK 3   /* set specified signal set */
+#define SIG_BLOCK   1   /* 合并阻塞集 */
+#define SIG_UNBLOCK 2   /* 清除阻塞集 */
+#define SIG_SETMASK 3   /* 设置新的阻塞集 */
 
 #if !defined(_ANSI_SOURCE) && !defined(_POSIX_SOURCE)
 #ifndef KERNEL
@@ -141,12 +145,12 @@ struct  sigaction {
 typedef void (*sig_t) __P((int));   /* type of signal function */
 
 /*
- * Structure used in sigaltstack call.
+ * 信号栈结构提
  */
 struct  sigaltstack {
-    char    *ss_base;       /* signal stack base */
-    int     ss_size;        /* signal stack length */
-    int     ss_flags;       /* SA_DISABLE and/or SA_ONSTACK */
+    char    *ss_base;       /* 信号栈基址 */
+    int     ss_size;        /* 栈长度 */
+    int     ss_flags;       /* 可设置为有效(SV_ONSTACK)或者无效标志 */
 };
 #define MINSIGSTKSZ 8192                    /* minimum allowable stack */
 #define SIGSTKSZ    (MINSIGSTKSZ + 32768)   /* recommended stack size */
