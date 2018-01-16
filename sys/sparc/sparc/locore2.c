@@ -53,7 +53,7 @@
 #include <sys/proc.h>
 #include <sys/resourcevar.h>
 
-int whichqs;
+int whichqs;//表示下次进程调度时从那个可运行队列中调入进程
 
 /*
  * Put process p on the run queue indicated by its priority.
@@ -70,7 +70,7 @@ setrunqueue(p)
     if (p->p_back != NULL)
         panic("setrunqueue");
     q = &qs[which];
-    whichqs |= 1 << which;
+    whichqs |= 1 << which;//不知道为什么要这么设置
     p->p_forw = (struct proc *)q;
     p->p_back = oldlast = q->ph_rlink;
     q->ph_rlink = p;

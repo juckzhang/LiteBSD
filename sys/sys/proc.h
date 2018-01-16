@@ -168,7 +168,7 @@ struct  proc {
 
     u_short p_xstat;            /* Exit status for wait; also stop signal. 进程退出时的状态*/
     u_short p_acflag;           /* Accounting flags. 标记退出的原因*/
-    struct  rusage *p_ru;       /* Exit information. XXX 退出时候的进程统计信息*/
+    struct  rusage *p_ru;       /* Exit information. XXX 退出时候的进程统计信息（进程退出时候在分配内存）*/
 };
 
 #define p_session   p_pgrp->pg_session

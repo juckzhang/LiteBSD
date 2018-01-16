@@ -43,7 +43,9 @@
 struct pstats {
 #define pstat_startzero p_ru
     struct  rusage p_ru;            /* stats for this proc */
-    struct  rusage p_cru;           /* sum of stats for reaped children */
+    //子进程的退出信息调用wait函数时候,
+    //调用wait函数时，会将子进程的统计信息回写到此处
+    struct  rusage p_cru;           /* sum of stats for reaped children*/
 #define pstat_endzero   pstat_startcopy
 
 #define pstat_startcopy p_timer

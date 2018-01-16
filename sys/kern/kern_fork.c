@@ -72,6 +72,8 @@ fork1(p1, isvfork, retval)
      * a nonprivileged user to use the last process; don't let root
      * exceed the limit. The variable nprocs is the current number of
      * processes, maxproc is the limit.
+     * nprocs:当前进程数量。maxproc:允许存在的最大进程数量
+     * 保证最后一个进程只能又超级用户创建
      */
     uid = p1->p_cred->p_ruid;
     if ((nprocs >= maxproc - 1 && uid != 0) || nprocs >= maxproc) {
@@ -82,6 +84,8 @@ fork1(p1, isvfork, retval)
     /*
      * Increment the count of procs running with this uid. Don't allow
      * a nonprivileged user to exceed their current limit.
+     * 将用户拥有的进程数量加1，表示该用户马上要创建一个新进程了。
+     * 判断该用户拥有的进程数量是不是超过限制，超过限制不让创建了（超级用户除外）
      */
     count = chgproccnt(uid, 1);
     if (uid != 0 && count > p1->p_rlimit[RLIMIT_NPROC].rlim_cur) {
@@ -89,12 +93,15 @@ fork1(p1, isvfork, retval)
         return (EAGAIN);
     }
 
-    /* Allocate new proc. */
+    /* Allocate new proc. 给新进程分配内存个*/
     MALLOC(newproc, struct proc *, sizeof(struct proc), M_PROC, M_WAITOK);
 
     /*
      * Find an unused process ID.  We remember a range of unused IDs
      * ready to use (from nextpid+1 through pidchecked-1).
+     * 以下这段是为了找到一个最小未使用的进程id分配给新进程。
+     * 查找规则：nextpid：可能可使用的进程号。保证nextpid未出现在allproc与zombproc两个队列中。
+     * 并且，也不能是一个存在的进程组id。否则nextpid++再次查找。
      */
     nextpid++;
 retry:
@@ -136,13 +143,13 @@ again:
             p2 = zombproc.lh_first;
             goto again;
         }
-    }
-
-    nprocs++;
+    }//已经找到一个最小未使用的进程号
+	
+    nprocs++;//已创建进程数加1.
     p2 = newproc;
-    p2->p_stat = SIDL;          /* protect against others */
+    p2->p_stat = SIDL;          /* 设置进程状态为SIDL */
     p2->p_pid = nextpid;
-    LIST_INSERT_HEAD(&allproc, p2, p_list);
+    LIST_INSERT_HEAD(&allproc, p2, p_list);//将新进程插入allproc队列
     p2->p_forw = p2->p_back = NULL;     /* shouldn't be necessary */
     LIST_INSERT_HEAD(PIDHASH(p2->p_pid), p2, p_hash);
 
@@ -162,7 +169,7 @@ again:
      * The p_stats and p_sigacts substructs are set in vm_fork.
      */
     p2->p_flag = P_INMEM;
-    if (p1->p_flag & P_PROFIL)
+    if (p1->p_flag & P_PROFIL)//继承父进程的P_PROFIL标志。所有的用户进程都会设置这个标志
         startprofclock(p2);
     MALLOC(p2->p_cred, struct pcred *, sizeof(struct pcred),
         M_SUBPROC, M_WAITOK);
@@ -171,16 +178,17 @@ again:
     crhold(p1->p_ucred);
 
     /* bump references to the text vnode (for procfs) */
-    p2->p_textvp = p1->p_textvp;
+    p2->p_textvp = p1->p_textvp;//子进程与父进程共享代码段副本
     if (p2->p_textvp)
-        VREF(p2->p_textvp);
+        VREF(p2->p_textvp);//增加代码段的引用计数器
 
-    p2->p_fd = fdcopy(p1);
+    p2->p_fd = fdcopy(p1);//拷贝文件描述符信息
     /*
      * If p_limit is still copy-on-write, bump refcnt,
      * otherwise get a copy that won't be modified.
      * (If PL_SHAREMOD is clear, the structure is shared
      * copy-on-write.)
+     * 设置子进程的资源限制信息
      */
     if (p1->p_limit->p_lflags & PL_SHAREMOD)
         p2->p_limit = limcopy(p1->p_limit);
@@ -190,13 +198,13 @@ again:
     }
 
     if (p1->p_session->s_ttyvp != NULL && p1->p_flag & P_CONTROLT)
-        p2->p_flag |= P_CONTROLT;
-    if (isvfork)
+        p2->p_flag |= P_CONTROLT;//标记子进程是否有控制终端（deamon进程没有控制终端）
+    if (isvfork)//如果是vfork调用，标记子进程为父进程在等待子进程执行。
         p2->p_flag |= P_PPWAIT;
     LIST_INSERT_AFTER(p1, p2, p_pglist);
     p2->p_pptr = p1;
     LIST_INSERT_HEAD(&p1->p_children, p2, p_sibling);
-    LIST_INIT(&p2->p_children);
+    LIST_INIT(&p2->p_children);//初始化新进程的子进程结构
 
 #ifdef KTRACE
     /*
@@ -214,7 +222,7 @@ again:
      * This begins the section where we must prevent the parent
      * from being swapped.
      */
-    p1->p_flag |= P_NOSWAP;
+    p1->p_flag |= P_NOSWAP;//标记父进程不能被换出.
     /*
      * Set return values for child before vm_fork,
      * so they can be copied to child stack.
@@ -225,12 +233,12 @@ again:
      */
     retval[0] = p1->p_pid;
     retval[1] = 1;
-    if (vm_fork(p1, p2, isvfork)) {
+    if (vm_fork(p1, p2, isvfork)) {//拷贝进程的上下文信息（延迟拷贝）
         /*
          * Child process.  Set start time and get to work.
          */
         (void) splclock();
-        p2->p_stats->p_start = time;
+        p2->p_stats->p_start = time;//资源统计的开始时间
         (void) spl0();
         p2->p_acflag = AFORK;
         return (0);
@@ -241,7 +249,7 @@ again:
      */
     (void) splhigh();
     p2->p_stat = SRUN;
-    setrunqueue(p2);
+    setrunqueue(p2);//将子进程加入可运行队列
     (void) spl0();
 
     /*
@@ -253,6 +261,7 @@ again:
      * Preserve synchronization semantics of vfork.  If waiting for
      * child to exec or exit, set P_PPWAIT on child, and sleep on our
      * proc (in case of exit).
+     * 如果是vfork 标记子进程为父进程在等待它先执行。并且让父进程sleep
      */
     if (isvfork)
         while (p2->p_flag & P_PPWAIT)
@@ -261,9 +270,10 @@ again:
     /*
      * Return child pid to parent process,
      * marking us as parent via retval[1].
+     * 貌似并没有看到有返回-1的情况。
      */
-    retval[0] = p2->p_pid;
-    retval[1] = 0;
+    retval[0] = p2->p_pid;//父进程返回子进程id
+    retval[1] = 0;//子进程返回0
     return (0);
 }
 

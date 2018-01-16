@@ -85,7 +85,7 @@ struct {								\
 #define	LIST_ENTRY(type)						\
 struct {								\
 	struct type *le_next;	/* next element */			\
-	struct type **le_prev;	/* address of previous next element */	\
+	struct type **le_prev;	/* address of previous next element 前一个的下一个元素的地址*/	\
 }
 
 /*

@@ -88,6 +88,7 @@ exit(p, uap, retval)
  * Exit: deallocate address space and other resources, change proc state
  * to zombie, and unlink proc from allproc and parent's lists.  Save exit
  * status and rusage for wait().  Check for child processes and orphan them.
+ * 进程退出
  */
 __dead void
 exit1(p, rv)
@@ -97,13 +98,13 @@ exit1(p, rv)
     register struct proc *q, *nq;
     register struct vmspace *vm;
 
-    if (p->p_pid == 1)
+    if (p->p_pid == 1)//init进程不能退出
         panic("init died (signal %d, exit %d)",
             WTERMSIG(rv), WEXITSTATUS(rv));
 #ifdef PGINPROF
     vmsizmon();
 #endif
-    if (p->p_flag & P_PROFIL)
+    if (p->p_flag & P_PROFIL)//关闭用户进程的资源统计定时器
         stopprofclock(p);
     MALLOC(p->p_ru, struct rusage *, sizeof(struct rusage),
         M_ZOMBIE, M_WAITOK);
@@ -112,16 +113,16 @@ exit1(p, rv)
      * P_PPWAIT is set; we will wakeup the parent below.
      */
     p->p_flag &= ~(P_TRACED | P_PPWAIT);
-    p->p_flag |= P_WEXIT;
-    p->p_sigignore = ~0;
-    p->p_siglist = 0;
-    untimeout(realitexpire, (caddr_t)p);
+    p->p_flag |= P_WEXIT;//进程标记为正在退出中
+    p->p_sigignore = ~0;//忽略所有信号
+    p->p_siglist = 0;//清除未决信号
+    untimeout(realitexpire, (caddr_t)p);//清除用户模式下的资源定时器
 
     /*
      * Close open files and release open-file table.
      * This may block!
      */
-    fdfree(p);
+    fdfree(p);//关闭打开的文件句柄，释放文件资源
 
     /* The next two chunks should probably be moved to vmspace_exit. */
     vm = p->p_vmspace;
@@ -136,8 +137,9 @@ exit1(p, rv)
      * Need to do this early enough that we can still sleep.
      * Can't free the entire vmspace as the kernel stack
      * may be mapped within that space also.
+     * 释放用户地址空间
      */
-    if (vm->vm_refcnt == 1)
+    if (vm->vm_refcnt == 1)//清除用户地址空间
         (void) vm_map_remove(&vm->vm_map, VM_MIN_ADDRESS,
             VM_MAXUSER_ADDRESS);
 
@@ -150,6 +152,7 @@ exit1(p, rv)
              * Signal foreground pgrp,
              * drain controlling terminal
              * and revoke access to controlling terminal.
+             * 如果是一个终端控制进程。给该会话下的所有进程发送一个终端退出信号
              */
             if (sp->s_ttyp->t_session == sp) {
                 if (sp->s_ttyp->t_pgrp)
@@ -159,7 +162,7 @@ exit1(p, rv)
                  * The tty could have been revoked
                  * if we blocked.
                  */
-                if (sp->s_ttyvp)
+                if (sp->s_ttyvp)//撤销终端
                     VOP_REVOKE(sp->s_ttyvp, REVOKEALL);
             }
             if (sp->s_ttyvp)
@@ -175,7 +178,7 @@ exit1(p, rv)
     }
     fixjobc(p, p->p_pgrp, 0);
     p->p_rlimit[RLIMIT_FSIZE].rlim_cur = RLIM_INFINITY;
-    (void)acct_process(p);
+    (void)acct_process(p);//打印进程信息
 #ifdef KTRACE
     /*
      * release trace file
@@ -188,7 +191,7 @@ exit1(p, rv)
      * Remove proc from allproc queue and pidhash chain.
      * Place onto zombproc.  Unlink from parent's child list.
      */
-    LIST_REMOVE(p, p_list);
+    LIST_REMOVE(p, p_list);//将进程从allproc队列移到zombproc队列中
     LIST_INSERT_HEAD(&zombproc, p, p_list);
     p->p_stat = SZOMB;
 
@@ -196,7 +199,7 @@ exit1(p, rv)
 
     q = p->p_children.lh_first;
     if (q)      /* only need this if any child is S_ZOMB */
-        wakeup((caddr_t) initproc);
+        wakeup((caddr_t) initproc);//唤醒init进程去接收p的子进程信息，防止子进程一直处于zomb状态
     for (; q != 0; q = nq) {
         nq = q->p_sibling.le_next;
         LIST_REMOVE(q, p_sibling);
@@ -216,7 +219,7 @@ exit1(p, rv)
      * Save exit status and final rusage info, adding in child rusage
      * info and self times.
      */
-    p->p_xstat = rv;
+    p->p_xstat = rv;//退出状态
     *p->p_ru = p->p_stats->p_ru;
     calcru(p, &p->p_ru->ru_utime, &p->p_ru->ru_stime, NULL);
     ruadd(p->p_ru, &p->p_stats->p_cru);
@@ -224,8 +227,8 @@ exit1(p, rv)
     /*
      * Notify parent that we're gone.
      */
-    psignal(p->p_pptr, SIGCHLD);
-    wakeup((caddr_t)p->p_pptr);
+    psignal(p->p_pptr, SIGCHLD);//给父进程发送SIGCHLD信号
+    wakeup((caddr_t)p->p_pptr);//唤醒父进程去接收该进程退出信息
 #if defined(tahoe)
     /* move this to cpu_exit */
     p->p_addr->u_pcb.pcb_savacc.faddr = (float *)NULL;
@@ -240,7 +243,7 @@ exit1(p, rv)
      *
      * Other substructures are freed from wait().
      */
-    curproc = NULL;
+    curproc = NULL;//清除p_limit
     if (--p->p_limit->p_refcnt == 0)
         FREE(p->p_limit, M_SUBPROC);
 
@@ -252,15 +255,16 @@ exit1(p, rv)
      * or ensure that the current one isn't reallocated before we
      * finish.  cpu_exit will end with a call to cpu_swtch(), finishing
      * our execution (pun intended).
+     * 这部分是机器依赖相关代码的执行。包括释放地址空间，内核栈，以及进程控制块
      */
     cpu_exit(p);
 }
 
 struct wait_args {
-    int pid;
-    int *status;
-    int options;
-    struct  rusage *rusage;
+    int pid;//退出的进程id
+    int *status;//退出进程的状态对应p->p_xstat
+    int options;//
+    struct  rusage *rusage;//资源使用情况对应p->p_ru
 };
 
 #define wait1   wait4
@@ -318,12 +322,12 @@ loop:
             /*
              * Decrement the count of procs running with this uid.
              */
-            (void)chgproccnt(p->p_cred->p_ruid, -1);
+            (void)chgproccnt(p->p_cred->p_ruid, -1);//减少用户拥有的进程数
 
             /*
              * Free up credentials.
              */
-            if (--p->p_cred->p_refcnt == 0) {
+            if (--p->p_cred->p_refcnt == 0) {//减少用户的引用计数器
                 crfree(p->p_cred->pc_ucred);
                 FREE(p->p_cred, M_SUBPROC);
             }
@@ -331,14 +335,14 @@ loop:
             /*
              * Release reference to text vnode
              */
-            if (p->p_textvp)
+            if (p->p_textvp)//减少代码段的引用计数器
                 vrele(p->p_textvp);
 
             /*
              * Finally finished with old proc entry.
              * Unlink it from its process group and free it.
              */
-            leavepgrp(p);
+            leavepgrp(p);//将进程从进程组中移除
             LIST_REMOVE(p, p_list); /* off zombproc */
             LIST_REMOVE(p, p_sibling);
 
@@ -347,9 +351,9 @@ loop:
              * to free anything that cpu_exit couldn't
              * release while still running in process context.
              */
-            cpu_wait(p);
+            cpu_wait(p);//释放一些在cpu_exit函数中处理不了的资源，例如进程上下文信息
             FREE(p, M_PROC);
-            nprocs--;
+            nprocs--;//当前系统的进程数量减1；
             return (0);
         }
         if (p->p_stat == SSTOP && (p->p_flag & P_WAITED) == 0 &&
