@@ -90,7 +90,7 @@
  * Priorities.  Note that with 32 run queues, differences less than 4 are
  * insignificant.
  */
-#define PSWP    0
+#define PSWP    0 //换入内存休眠
 #define PVM     4
 #define PINOD   8
 #define PRIBIO  16

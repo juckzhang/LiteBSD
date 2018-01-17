@@ -677,7 +677,7 @@ selwakeup(sip)
 
     if (sip->si_pid == 0)
         return;
-    if (sip->si_flags & SI_COLL) {
+    if (sip->si_flags & SI_COLL) {//检测是否有多个进程在等待
         nselcoll++;
         sip->si_flags &= ~SI_COLL;
         wakeup((caddr_t)&selwait);

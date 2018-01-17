@@ -314,14 +314,14 @@ tsleep(ident, priority, wmesg, timo)
     p->p_wmesg = wmesg;
     p->p_slptime = 0;
     p->p_priority = priority & PRIMASK;
-    qp = &slpque[LOOKUP(ident)];
+    qp = &slpque[LOOKUP(ident)];//选择一个休眠队列
     if (qp->sq_head == 0)
         qp->sq_head = p;
     else
         *qp->sq_tailp = p;
     *(qp->sq_tailp = &p->p_forw) = 0;
     if (timo)
-        timeout(endtsleep, (void *)p, timo);
+        timeout(endtsleep, (void *)p, timo);//注册一个定时器
     /*
      * We put ourselves on the sleep queue and start our timeout
      * before calling CURSIG, as we could stop there, and a wakeup
@@ -333,7 +333,7 @@ tsleep(ident, priority, wmesg, timo)
      */
     if (catch) {
         p->p_flag |= P_SINTR;
-        sig = CURSIG(p);
+        sig = CURSIG(p);//检查是否有信号未处理
         if (sig) {
             if (p->p_wchan)
                 unsleep(p);
