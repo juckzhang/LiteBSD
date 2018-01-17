@@ -44,7 +44,7 @@
 #include <machine/cpu.h>
 
 /*
- * Locking primitives implementation.
+ * Locking primitives implementation.//锁原语的实现
  * Locks provide shared/exclusive sychronization.
  */
 
@@ -63,6 +63,7 @@
  * inside a multiline define.
  */
 int lock_wait_time = 100;
+//wanted: 是否延迟获取锁
 #define PAUSE(lkp, wanted)                          \
         if (lock_wait_time > 0) {                   \
             int i;                                  \
@@ -120,18 +121,18 @@ lockinit(lkp, prio, wmesg, timo, flags)
 
     bzero(lkp, sizeof(struct lock));
     simple_lock_init(&lkp->lk_interlock);
-    lkp->lk_flags = flags & LK_EXTFLG_MASK;
-    lkp->lk_prio = prio;
-    lkp->lk_timo = timo;
-    lkp->lk_wmesg = wmesg;
-    lkp->lk_lockholder = LK_NOPROC;
+    lkp->lk_flags = flags & LK_EXTFLG_MASK;//可以标记锁的类型
+    lkp->lk_prio = prio;//等待获取锁时的进程优先级
+    lkp->lk_timo = timo;//最大等待时间
+    lkp->lk_wmesg = wmesg;//提示信息
+    lkp->lk_lockholder = LK_NOPROC;//当前占有锁的进程
 }
 
 /*
  * Determine the status of a lock.
+ * 获取锁类型是共享锁还是独占锁
  */
-int
-lockstatus(lkp)
+int lockstatus(lkp)
     struct lock *lkp;
 {
     int lock_type = 0;
@@ -169,7 +170,7 @@ lockmgr(lkp, flags, interlkp, p)
     else
         pid = LK_KERNPROC;
     simple_lock(&lkp->lk_interlock);
-    if (flags & LK_INTERLOCK)
+    if (flags & LK_INTERLOCK)//获取锁后立即释放
         simple_unlock(interlkp);
     extflags = (flags | lkp->lk_flags) & LK_EXTFLG_MASK;
 #ifdef DIAGNOSTIC
@@ -446,7 +447,7 @@ lockmgr_printinfo(lkp)
 #include <vm/vm.h>
 #include <sys/sysctl.h>
 
-int lockpausetime = 0;
+int lockpausetime = 0;//获取锁时的等待时间？
 struct ctldebug debug2 = { "lockpausetime", &lockpausetime };
 int simplelockrecurse;
 
@@ -465,8 +466,8 @@ simple_lock_init(alp)
 void
 _simple_lock(alp, id, l)
     __volatile struct simplelock *alp;
-    const char *id;
-    int l;
+    const char *id;//当前文件名称
+    int l;//行号
 {
 
     if (simplelockrecurse)
@@ -502,7 +503,7 @@ _simple_lock_try(alp, id, l)
         return (1);
     alp->lock_data = 1;
     if (curproc)
-        curproc->p_simple_locks++;
+        curproc->p_simple_locks++;//当前进程的简单锁数量增加1
     return (1);
 }
 

@@ -51,20 +51,21 @@
 #define NDEXTENT    50      /* 250 bytes in 256-byte alloc. */
 
 struct filedesc {
-    struct  file **fd_ofiles;   /* file structures for open files */
+    struct  file **fd_ofiles;   /* file structures for open files 打开的文件链表*/
     char    *fd_ofileflags;     /* per-process open file flags */
-    struct  vnode *fd_cdir;     /* current directory */
-    struct  vnode *fd_rdir;     /* root directory */
-    int     fd_nfiles;          /* number of open files allocated */
-    u_short fd_lastfile;        /* high-water mark of fd_ofiles */
-    u_short fd_freefile;        /* approx. next free file */
-    u_short fd_cmask;           /* mask for file creation */
-    u_short fd_refcnt;          /* reference count */
+    struct  vnode *fd_cdir;     /* current directory 当前目录*/
+    struct  vnode *fd_rdir;     /* root directory 根目录*/
+    int     fd_nfiles;          /* number of open files allocated 打开的资源数量*/
+    u_short fd_lastfile;        /* high-water mark of fd_ofiles 打开资源数的高水位标记*/
+    u_short fd_freefile;        /* approx. next free file 可能下一个可用的fd ID*/
+    u_short fd_cmask;           /* mask for file creation 创建文件时的掩码标记*/
+    u_short fd_refcnt;          /* reference count 引用计数器*/
 };
 
 /*
  * Basic allocation of descriptors:
  * one of the above, plus arrays for NDFILE descriptors.
+ * 系统所有打开文件的管理结构体
  */
 struct filedesc0 {
     struct  filedesc fd_fd;

@@ -383,6 +383,7 @@ loop:
 
 /*
  * make process 'parent' the new parent of process 'child'.
+ * 重定向进程的父进程。一般会将退出进程的子进程重定向到init进程
  */
 void
 proc_reparent(child, parent)

@@ -140,7 +140,7 @@ typedef int32_t fd_mask;
 #endif
 
 typedef struct fd_set {
-    fd_mask fds_bits[howmany(FD_SETSIZE, NFDBITS)];
+    fd_mask fds_bits[howmany(FD_SETSIZE, NFDBITS)];//int32_t fds_bits[8]
 } fd_set;
 
 #define FD_SET(n, p)    ((p)->fds_bits[(n)/NFDBITS] |= (1 << ((n) % NFDBITS)))

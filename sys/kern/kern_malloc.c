@@ -43,13 +43,13 @@
 #include <vm/vm.h>
 #include <vm/vm_kern.h>
 
-struct kmembuckets bucket[MINBUCKET + 16];
-struct kmemstats kmemstats[M_LAST];
-struct kmemusage *kmemusage;
+struct kmembuckets bucket[MINBUCKET + 16];//内核内存槽队列数组（各种不同大小的内存块队列）
+struct kmemstats kmemstats[M_LAST];//内核内存统计信息
+struct kmemusage *kmemusage;//不同槽分别有一个统计表
 char *kmembase, *kmemlimit;
 char *memname[] = INITKMEMNAMES;
 
-#ifdef DIAGNOSTIC
+#ifdef DIAGNOSTIC//诊断模式 正常情况是不使用的。
 /*
  * This structure provides a set of masks to catch unaligned frees.
  */
@@ -87,6 +87,8 @@ struct freelist {
 
 /*
  * Allocate a block of memory
+ * 分配一块内存
+ * type: mbuf、M_PROC、M_FILE eg..
  */
 void *
 malloc(size, type, flags)
@@ -107,7 +109,7 @@ malloc(size, type, flags)
 #ifdef DEBUG
     extern int simplelockrecurse;
 #endif
-#ifdef KMEMSTATS
+#ifdef KMEMSTATS//统计内核内存
     register struct kmemstats *ksp = &kmemstats[type];
 
     if (((unsigned long)type) > M_LAST)
@@ -117,16 +119,16 @@ malloc(size, type, flags)
     kbp = &bucket[indx];
     s = splimp();
 #ifdef KMEMSTATS
-    while (ksp->ks_memuse >= ksp->ks_limit) {
+    while (ksp->ks_memuse >= ksp->ks_limit) {//如果已经存在的总字节数量超过限制。分配失败
         if (flags & M_NOWAIT) {
             splx(s);
             return ((void *) NULL);
         }
         if (ksp->ks_limblocks < 65535)
             ksp->ks_limblocks++;
-        tsleep((caddr_t)ksp, PSWP+2, memname[type], 0);
+        tsleep((caddr_t)ksp, PSWP+2, memname[type], 0);//休眠等待，其他地方释放内存后在重试
     }
-    ksp->ks_size |= 1 << indx;
+    ksp->ks_size |= 1 << indx;//分配的单位大小
 #endif
 #ifdef DIAGNOSTIC
     copysize = 1 << indx < MAX_COPY ? 1 << indx : MAX_COPY;
@@ -135,9 +137,9 @@ malloc(size, type, flags)
     if (flags & M_NOWAIT)
         simplelockrecurse++;
 #endif
-    if (kbp->kb_next == NULL) {
+    if (kbp->kb_next == NULL) {//当前槽没有可分配的内存
         kbp->kb_last = NULL;
-        if (size > MAXALLOCSAVE)
+        if (size > MAXALLOCSAVE)//超过最大分配大小
             allocsize = roundup(size, CLBYTES);
         else
             allocsize = 1 << indx;

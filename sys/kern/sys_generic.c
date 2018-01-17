@@ -518,7 +518,7 @@ selscan(p, ibits, obits, nfd, retval)
                     return (EBADF);
                 if ((*fp->f_ops->fo_select)(fp, flag[msk], p)) {
                     FD_SET(fd, &obits[msk]);
-                    n++;
+                    n++;//返回有多少文件可以操作
                 }
             }
         }
@@ -549,9 +549,9 @@ select(p, uap, retval)
 
     bzero((caddr_t)ibits, sizeof(ibits));
     bzero((caddr_t)obits, sizeof(obits));
-    if (SCARG(uap, nd) > FD_SETSIZE)
+    if (SCARG(uap, nd) > FD_SETSIZE)//不能大于256
         return (EINVAL);
-    if (SCARG(uap, nd) > p->p_fd->fd_nfiles) {
+    if (SCARG(uap, nd) > p->p_fd->fd_nfiles) {//判断是否大于当前进程打开的文件数量
         /* forgiving; slightly wrong */
         SCARG(uap, nd) = p->p_fd->fd_nfiles;
     }
@@ -571,7 +571,7 @@ select(p, uap, retval)
             sizeof (atv));
         if (error)
             goto done;
-        if (itimerfix(&atv)) {
+        if (itimerfix(&atv)) {//检查时间格式是否合法
             error = EINVAL;
             goto done;
         }
@@ -582,7 +582,7 @@ select(p, uap, retval)
 retry:
     ncoll = nselcoll;
     p->p_flag |= P_SELECT;
-    error = selscan(p, ibits, obits, SCARG(uap, nd), retval);
+    error = selscan(p, ibits, obits, SCARG(uap, nd), retval);//扫描相关文件是否可操作
     if (error || *retval)
         goto done;
     s = splhigh();
@@ -609,7 +609,7 @@ retry:
     p->p_flag &= ~P_SELECT;
     error = tsleep((caddr_t)&selwait, PSOCK | PCATCH, "select", timo);
     splx(s);
-    if (error == 0)
+    if (error == 0)//超时后做最后一次扫描
         goto retry;
 done:
     p->p_flag &= ~P_SELECT;
@@ -774,7 +774,7 @@ poll(p, v, retval)
 		timeradd(&atv, &time, &atv);
 		timo = hzto(&atv);
 		/*
-		 * Avoid inadvertently sleeping forever.
+		 * Avoid inadvertently sleeping forever.//避免永久休眠
 		 */
 		if (timo == 0)
 			timo = 1;

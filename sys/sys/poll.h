@@ -29,9 +29,9 @@
 #define	_SYS_POLL_H_
 
 typedef struct pollfd {
-	int 	fd;
-	short	events;
-	short	revents;
+	int 	fd;//文件描述符id
+	short	events;//监听的事件(read、write、error)
+	short	revents;//已发生的事件
 } pollfd_t;
 
 typedef unsigned int	nfds_t;

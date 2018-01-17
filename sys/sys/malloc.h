@@ -185,14 +185,14 @@
 }
 
 struct kmemstats {
-    long    ks_inuse;       /* # of packets of this type currently in use */
-    long    ks_calls;       /* total packets of this type ever allocated */
-    long    ks_memuse;      /* total memory held in bytes */
-    u_short ks_limblocks;   /* number of times blocked for hitting limit */
+    long    ks_inuse;       /* # of packets of this type currently in use 当前使用中的数量*/
+    long    ks_calls;       /* total packets of this type ever allocated 曾经分配过的总数量*/
+    long    ks_memuse;      /* total memory held in bytes 总字节数量*/
+    u_short ks_limblocks;   /* number of times blocked for hitting limit 最多允许分配的块数（65535）*/
     u_short ks_mapblocks;   /* number of times blocked for kernel map */
-    long    ks_maxused;     /* maximum number ever used */
-    long    ks_limit;       /* most that are allowed to exist */
-    long    ks_size;        /* sizes of this thing that are allocated */
+    long    ks_maxused;     /* maximum number ever used 曾经使用过的最大数*/
+    long    ks_limit;       /* most that are allowed to exist 允许存在的数量*/
+    long    ks_size;        /* sizes of this thing that are allocated 分配的大小*/
     long    ks_spare;
 };
 
@@ -211,16 +211,17 @@ struct kmemusage {
 
 /*
  * Set of buckets for each size of memory block that is retained
+ * 不同大小的内存块槽队列
  */
 struct kmembuckets {
-    caddr_t kb_next;        /* list of free blocks */
-    caddr_t kb_last;        /* last free block */
+    caddr_t kb_next;        /* list of free blocks 下一块内存的地址*/
+    caddr_t kb_last;        /* last free block 最后一块内存的地址*/
     long    kb_calls;       /* total calls to allocate this size */
-    long    kb_total;       /* total number of blocks allocated */
-    long    kb_totalfree;   /* # of free elements in this bucket */
+    long    kb_total;       /* total number of blocks allocated 已分配的块数*/
+    long    kb_totalfree;   /* # of free elements in this bucket 空闲数量*/
     long    kb_elmpercl;    /* # of elements in this sized allocation */
-    long    kb_highwat;     /* high water mark */
-    long    kb_couldfree;   /* over high water mark and could free */
+    long    kb_highwat;     /* high water mark 高水位标记*/
+    long    kb_couldfree;   /* over high water mark and could free 超过水位标记并且能够释放*/
 };
 
 #ifdef KERNEL
