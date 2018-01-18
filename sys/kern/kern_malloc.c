@@ -143,7 +143,7 @@ malloc(size, type, flags)
             allocsize = roundup(size, CLBYTES);
         else
             allocsize = 1 << indx;
-        npg = clrnd(btoc(allocsize));
+        npg = clrnd(btoc(allocsize));//处理字节对齐问题
         va = (caddr_t) kmem_malloc(kmem_map, (vm_size_t)ctob(npg),
                        !(flags & M_NOWAIT));
         if (va == NULL) {

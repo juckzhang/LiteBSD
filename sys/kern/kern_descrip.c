@@ -359,7 +359,7 @@ close(p, uap, retval)
     while (fdp->fd_lastfile > 0 && fdp->fd_ofiles[fdp->fd_lastfile] == NULL)
         fdp->fd_lastfile--;
     if (fd < fdp->fd_freefile)
-        fdp->fd_freefile = fd;
+        fdp->fd_freefile = fd;//将最近一次释放的fid，保存，这样在下一个文件打开的时候可以快速使用
     *pf = 0;
     return (closef(fp, p));
 }
