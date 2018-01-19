@@ -284,7 +284,7 @@ kmem_malloc(map, size, canwait)
     if (map != kmem_map && map != mb_map)
         panic("kern_malloc_alloc: map != {kmem,mb}_map");
 
-    size = round_page(size);
+    size = round_page(size);//处理字节最齐
     addr = vm_map_min(map);
 
     /*
@@ -302,7 +302,7 @@ kmem_malloc(map, size, canwait)
     }
     offset = addr - vm_map_min(kmem_map);
     vm_object_reference(kmem_object);
-    vm_map_insert(map, kmem_object, offset, addr, addr + size);
+    vm_map_insert(map, kmem_object, offset, addr, addr + size);//插入地址映射表
 
     /*
      * If we can wait, just mark the range as wired

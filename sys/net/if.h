@@ -104,7 +104,7 @@ struct ifnet {
         u_long  ifi_ierrors;    /* input errors on interface */
         u_long  ifi_opackets;   /* packets sent on interface */
         u_long  ifi_oerrors;    /* output errors on interface */
-        u_long  ifi_collisions; /* collisions on csma interfaces */
+        u_long  ifi_collisions; /* collisions on csma interfaces 监听到有冲突的包数量*/
         u_long  ifi_ibytes;     /* total number of octets received */
         u_long  ifi_obytes;     /* total number of octets sent */
         u_long  ifi_imcasts;    /* packets received via multicast */
@@ -135,7 +135,7 @@ struct ifnet {
         int ifq_len;
         int ifq_maxlen;
         int ifq_drops;
-    } if_snd;                   /* output queue */
+    } if_snd;                   /* output queue 输出缓冲*/
 };
 #define if_mtu          if_data.ifi_mtu
 #define if_type         if_data.ifi_type
@@ -272,7 +272,7 @@ struct ifa_msghdr {
  * definitions which begin with ifr_name.  The
  * remainder may be interface specific.
  */
-struct  ifreq {
+struct  ifreq {//配置请求参数
 #define IFNAMSIZ    16
     char    ifr_name[IFNAMSIZ];     /* if name, e.g. "en0" */
     union {

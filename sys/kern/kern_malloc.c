@@ -115,20 +115,20 @@ malloc(size, type, flags)
     if (((unsigned long)type) > M_LAST)
         panic("malloc - bogus type");
 #endif
-    indx = BUCKETINDX(size);
-    kbp = &bucket[indx];
+    indx = BUCKETINDX(size);//根据size找到合适大小的槽索引
+    kbp = &bucket[indx];//根据槽所以，获取相应的槽
     s = splimp();
-#ifdef KMEMSTATS
+#ifdef KMEMSTATS//如果当前类型分配的数量超过限制，就需要被阻塞。也许是为了等待其他地方释放此类型的内存吧
     while (ksp->ks_memuse >= ksp->ks_limit) {//如果已经存在的总字节数量超过限制。分配失败
         if (flags & M_NOWAIT) {
             splx(s);
             return ((void *) NULL);
         }
-        if (ksp->ks_limblocks < 65535)
+        if (ksp->ks_limblocks < 65535)//之所以是小于65535，是因为ksp->ks_limblocks是short类型。尴尬不！！！
             ksp->ks_limblocks++;
-        tsleep((caddr_t)ksp, PSWP+2, memname[type], 0);//休眠等待，其他地方释放内存后在重试
+        tsleep((caddr_t)ksp, PSWP+2, memname[type], 0);
     }
-    ksp->ks_size |= 1 << indx;//分配的单位大小
+    ksp->ks_size |= 1 << indx;//此槽中每块内存的单位大小
 #endif
 #ifdef DIAGNOSTIC
     copysize = 1 << indx < MAX_COPY ? 1 << indx : MAX_COPY;
@@ -140,13 +140,13 @@ malloc(size, type, flags)
     if (kbp->kb_next == NULL) {//当前槽没有可分配的内存
         kbp->kb_last = NULL;
         if (size > MAXALLOCSAVE)//超过最大分配大小
-            allocsize = roundup(size, CLBYTES);
+            allocsize = roundup(size, CLBYTES);//CLBYTES = 4096
         else
             allocsize = 1 << indx;
-        npg = clrnd(btoc(allocsize));//处理字节对齐问题
+        npg = clrnd(btoc(allocsize));//计算需要分配多少块内存
         va = (caddr_t) kmem_malloc(kmem_map, (vm_size_t)ctob(npg),
                        !(flags & M_NOWAIT));
-        if (va == NULL) {
+        if (va == NULL) {//分配失败 返回NULL
             splx(s);
 #ifdef DEBUG
             if (flags & M_NOWAIT)
@@ -257,7 +257,7 @@ out:
     if (flags & M_NOWAIT)
         simplelockrecurse--;
 #endif
-    return ((void *) va);
+    return ((void *) va);//返回分配的内存地址
 }
 
 /*
@@ -366,6 +366,7 @@ free(addr, type)
 
 /*
  * Initialize the kernel memory allocator
+ * 初始化内核内存分配器
  */
 void
 kmeminit()

@@ -81,15 +81,15 @@
 
 void vm_mem_init()
 {
-    extern vm_offset_t  avail_start, avail_end;
-    extern vm_offset_t  virtual_avail, virtual_end;
+    extern vm_offset_t  avail_start, avail_end;//物理页内存的起始地址与结束地址
+    extern vm_offset_t  virtual_avail, virtual_end;//虚拟内存的起始地址与结束地址
 
     /*
      *  Initializes resident memory structures.
      *  From here on, all physical memory is accounted for,
      *  and we use only virtual addresses.
      */
-    vm_set_page_size();
+    vm_set_page_size();//设置内存页单位大小
     vm_page_startup(&avail_start, &avail_end);
 
     /*

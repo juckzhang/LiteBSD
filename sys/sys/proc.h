@@ -49,11 +49,11 @@
  * One structure allocated per session.
  */
 struct  session {
-    int     s_count;                /* Ref cnt; pgrps in session. */
-    struct  proc *s_leader;         /* Session leader. */
-    struct  vnode *s_ttyvp;         /* Vnode of controlling terminal. */
-    struct  tty *s_ttyp;            /* Controlling terminal. */
-    char    s_login[MAXLOGNAME];    /* Setlogin() name. */
+    int     s_count;                /* Ref cnt; pgrps in session. 会话中的进程组数量*/
+    struct  proc *s_leader;         /* Session leader. 领导进程*/
+    struct  vnode *s_ttyvp;         /* Vnode of controlling terminal. 控制终端的vnode节点*/
+    struct  tty *s_ttyp;            /* Controlling terminal. 控制终端*/
+    char    s_login[MAXLOGNAME];    /* Setlogin() name. 登录名*/
 };
 
 /*
