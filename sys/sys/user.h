@@ -56,7 +56,7 @@
  */
  
 struct  user {
-    struct  pcb u_pcb;
+    struct  pcb u_pcb;//进程上下文信息
 
     struct  sigacts u_sigacts;  /* p_sigacts points here (use it!) */
     struct  pstats u_stats;     /* p_stats points here (use it!) */

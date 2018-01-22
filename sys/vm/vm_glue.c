@@ -423,7 +423,7 @@ swapout_threads()
     outp = outp2 = NULL;
     outpri = outpri2 = 0;
     for (p = allproc.lh_first; p != 0; p = p->p_list.le_next) {
-        if (!swappable(p))
+        if (!swappable(p))//判断进程flag是否可以换出
             continue;
         switch (p->p_stat) {
         case SRUN:
@@ -437,10 +437,10 @@ swapout_threads()
 
         case SSLEEP:
         case SSTOP:
-            if (p->p_slptime >= maxslp) {
+            if (p->p_slptime >= maxslp) {//休眠时间超过最大阻塞时间，将被换出
                 swapout(p);
                 didswap++;
-            } else if (p->p_slptime > outpri) {
+            } else if (p->p_slptime > outpri) {//或者进程的优先级，已经低于允许换出的级别
                 outp = p;
                 outpri = p->p_slptime;
             }

@@ -160,9 +160,9 @@ vm_page_startup(start, end)
      *  the active queue and the inactive queue.
      */
 
-    TAILQ_INIT(&vm_page_queue_free);
-    TAILQ_INIT(&vm_page_queue_active);
-    TAILQ_INIT(&vm_page_queue_inactive);
+    TAILQ_INIT(&vm_page_queue_free);//空闲页队列
+    TAILQ_INIT(&vm_page_queue_active);//活动页队列
+    TAILQ_INIT(&vm_page_queue_inactive);//无效页队列
 
     /*
      *  Calculate the number of hash table buckets.
@@ -217,7 +217,7 @@ vm_page_startup(start, end)
      */
 
     kentry_data_size = round_page(MAX_KMAP*sizeof(struct vm_map) +
-                      MAX_KMAPENT*sizeof(struct vm_map_entry));
+                      MAX_KMAPENT*sizeof(struct vm_map_entry));//处理对齐问题
     kentry_data = (vm_offset_t) pmap_bootstrap_alloc(kentry_data_size);
 //printf("kentry_data = %08x, %u+%u entries, %u+%u bytes\n", kentry_data, MAX_KMAP, MAX_KMAPENT, sizeof(struct vm_map), sizeof(struct vm_map_entry));
 

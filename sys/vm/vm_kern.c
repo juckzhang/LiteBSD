@@ -93,7 +93,7 @@ kmem_alloc_pageable(map, size)
         panic("kmem_alloc_pageable: not called with kernel_map");
 #endif
 
-    size = round_page(size);
+    size = round_page(size);//保证按页大小字节对齐(一页4K)
 
     addr = vm_map_min(map);
     result = vm_map_find(map, NULL, (vm_offset_t) 0,

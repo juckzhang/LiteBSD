@@ -110,7 +110,7 @@ main(framep)
     register int i;
     int s;
     register_t rval[2];
-    extern struct pdevinit pdevinit[];
+    extern struct pdevinit pdevinit[];//伪设备绑定处理函数。
     extern void roundrobin __P((void *));
     extern void schedcpu __P((void *));
 
@@ -129,7 +129,7 @@ main(framep)
      * 3、初始化终端控制器的几个函数句柄（cn_probe，cn_init，cn_getc，cn_putc）
      *    并调用终端控制器的init函数
      */
-    consinit();
+    consinit();//初始化终端控制器后下面的printf函数才能正确的使用。
     printf(copyright);
 
     vm_mem_init();//虚拟内存初始化
@@ -139,6 +139,8 @@ main(framep)
     /*
      * Initialize process and pgrp structures.
      * 初始化 allproc、zombproc队列
+     * allproc: 所有可以运行与休眠进程的队列
+     * zombproc: 僵尸进程队列，此队列与allproc队列是互斥。
      */
     procinit();
 
@@ -222,7 +224,7 @@ main(framep)
     initclocks();
 
     /* Initialize mbuf's. */
-    mbinit();//初始化mbuf链表 在网络通信中常用到mbuf
+    mbinit();//初始化mbuf链表 在网络通信中常用到mbuf内存
 
     /* Initialize clists. */
     clist_init();
@@ -232,13 +234,15 @@ main(framep)
     shminit();
 #endif
 
-    /* Attach pseudo-devices. */
+    /* Attach pseudo-devices. 绑定伪设备*/
     for (pdev = pdevinit; pdev->pdev_attach != NULL; pdev++)
         (*pdev->pdev_attach)(pdev->pdev_count);
 
     /*
      * Initialize protocols.  Block reception of incoming packets
      * until everything is ready.
+     * 网络接口与domain域初始化。
+     * 这两块在以后做网络分析时，需要着重去分析
      */
     s = splimp();
     ifinit();
