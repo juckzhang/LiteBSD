@@ -48,6 +48,7 @@ extern char sigcode[], esigcode[];
 
 /*
  * Close any files on exec?
+ * 释放文件
  */
 static void
 fdcloseexec(p)

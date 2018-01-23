@@ -115,13 +115,14 @@ vm_set_page_size()
 {
 
     if (cnt.v_page_size == 0)
-        cnt.v_page_size = DEFAULT_PAGE_SIZE;
+        cnt.v_page_size = DEFAULT_PAGE_SIZE;//默认页大小为4K
     page_mask = cnt.v_page_size - 1;
-    if ((page_mask & cnt.v_page_size) != 0)
+    if ((page_mask & cnt.v_page_size) != 0)//这是不是有点多余了？？？？？
         panic("vm_set_page_size: page size not a power of two");
     for (page_shift = 0; ; page_shift++)
         if ((1 << page_shift) == cnt.v_page_size)
             break;
+	
 }
 
 
@@ -133,6 +134,8 @@ vm_set_page_size()
  *  Allocates memory for the page cells, and
  *  for the object/offset-to-page hash table headers.
  *  Each page cell is initialized and placed on the free list.
+ * 分配页单元内存以及object/offset-to-page哈希表头分配内存，
+ * 并将页单元放入空闲链表中。
  */
 void
 vm_page_startup(start, end)
@@ -150,6 +153,7 @@ vm_page_startup(start, end)
 
     /*
      *  Initialize the locks
+     * 初始化两个队列操作的锁
      */
 
     simple_lock_init(&vm_page_queue_free_lock);
@@ -158,6 +162,7 @@ vm_page_startup(start, end)
     /*
      *  Initialize the queue headers for the free queue,
      *  the active queue and the inactive queue.
+     * 初始化三个页内存管理的相关队列（将队列的对头与队尾指针设置为NULL）
      */
 
     TAILQ_INIT(&vm_page_queue_free);//空闲页队列
@@ -177,7 +182,7 @@ vm_page_startup(start, end)
 
     if (vm_page_bucket_count == 0) {
         vm_page_bucket_count = 1;
-        while (vm_page_bucket_count < atop(*end - *start))
+        while (vm_page_bucket_count < atop(*end - *start))//将内存大小转换成页数量
             vm_page_bucket_count <<= 1;
     }
 
@@ -187,11 +192,11 @@ vm_page_startup(start, end)
      *  Allocate (and initialize) the hash table buckets.
      */
     vm_page_buckets = (struct pglist *)
-        pmap_bootstrap_alloc(vm_page_bucket_count * sizeof(struct pglist));
+        pmap_bootstrap_alloc(vm_page_bucket_count * sizeof(struct pglist));//分配页内存
     bucket = vm_page_buckets;
 //printf("vm_page_buckets = %08x, %u entries, %u bytes\n", vm_page_buckets, vm_page_bucket_count, vm_page_bucket_count * sizeof(struct pglist));
 
-    for (i = vm_page_bucket_count; i--;) {
+    for (i = vm_page_bucket_count; i--;) {//初始化每个槽的队列
         TAILQ_INIT(bucket);
         bucket++;
     }

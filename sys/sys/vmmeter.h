@@ -72,15 +72,15 @@ struct vmmeter {
     /*
      * Distribution of page usages.
      */
-    u_int v_page_size;      /* page size in bytes */
-    u_int v_kernel_pages;   /* number of pages in use by kernel */
-    u_int v_free_target;    /* number of pages desired free */
-    u_int v_free_min;       /* minimum number of pages desired free */
-    u_int v_free_count;     /* number of pages free */
+    u_int v_page_size;      /* page size in bytes 页内存单位大小*/
+    u_int v_kernel_pages;   /* number of pages in use by kernel 内核使用中的页数量*/
+    u_int v_free_target;    /* number of pages desired free 所需页数*/
+    u_int v_free_min;       /* minimum number of pages desired free 所最小页数*/
+    u_int v_free_count;     /* number of pages free 空闲页数*/
     u_int v_wire_count;     /* number of pages wired down */
-    u_int v_active_count;   /* number of pages active */
-    u_int v_inactive_target; /* number of pages desired inactive */
-    u_int v_inactive_count;  /* number of pages inactive */
+    u_int v_active_count;   /* number of pages active 活动页数*/
+    u_int v_inactive_target; /* number of pages desired inactive 期望无效页数*/
+    u_int v_inactive_count;  /* number of pages inactive 无效页数*/
 };
 #ifdef KERNEL
 struct  vmmeter cnt;

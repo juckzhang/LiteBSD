@@ -89,13 +89,13 @@ void vm_mem_init()
      *  From here on, all physical memory is accounted for,
      *  and we use only virtual addresses.
      */
-    vm_set_page_size();//设置内存页单位大小
-    vm_page_startup(&avail_start, &avail_end);
+    vm_set_page_size();//设置内存页单位大小,以及初始化page_shift值，默认页大小是4K
+    vm_page_startup(&avail_start, &avail_end);//初始化以及分配相关内核页内存
 
     /*
      * Initialize other VM packages
      */
-    vm_object_init(virtual_end - VM_MIN_KERNEL_ADDRESS);
+    vm_object_init(virtual_end - VM_MIN_KERNEL_ADDRESS);//VM_MIN_KERNEL_ADDRESS: 0xFE000000
     vm_map_startup();
     kmem_init(virtual_avail, virtual_end);
     pmap_init(avail_start, avail_end);

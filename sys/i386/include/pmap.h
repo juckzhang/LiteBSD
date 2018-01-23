@@ -53,6 +53,7 @@
 /*
  * 386 page table entry and page table directory
  * W.Jolitz, 8/89
+ * 页目录结构
  */
 
 struct pde
@@ -65,7 +66,7 @@ unsigned int
         :1,             /* not used */
         pd_mbz2:2,      /* reserved, must be zero */
         :3,             /* reserved for software */
-        pd_pfnum:20;    /* physical page frame number of pte's*/
+        pd_pfnum:20;    /* physical page frame number of pte's 对应物理页表地址*/
 };
 
 #define PD_MASK     0xffc00000  /* page directory address bits */
@@ -73,11 +74,12 @@ unsigned int
 #define PD_SHIFT    22          /* page directory address shift */
 #define PG_SHIFT    12          /* page table address shift */
 
+//内核页表结构
 struct pte
 {
 unsigned int
         pg_v:1,         /* valid bit */
-        pg_prot:2,      /* access control */
+        pg_prot:2,      /* access control 访问控制*/
         pg_mbz1:2,      /* reserved, must be zero */
         pg_u:1,         /* hardware maintained 'used' bit */
         pg_m:1,         /* hardware maintained modified bit */
@@ -85,7 +87,7 @@ unsigned int
         pg_w:1,         /* software, wired down page */
         :1,             /* software (unused) */
         pg_nc:1,        /* 'uncacheable page' bit */
-        pg_pfnum:20;    /* physical page frame number */
+        pg_pfnum:20;    /* physical page frame number 对应物理页框地址*/
 };
 
 #define PG_V        0x00000001

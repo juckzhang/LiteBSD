@@ -55,8 +55,8 @@
  * Pmap stuff
  */
 struct pmap {
-    struct pte      *pm_ptab;       /* KVA of page table */
-    struct ste      *pm_stab;       /* KVA of segment table */
+    struct pte      *pm_ptab;       /* KVA of page table 内核页表*/
+    struct ste      *pm_stab;       /* KVA of segment table 内核段表*/
     int             pm_stchanged;   /* ST changed */
     int             pm_stfree;      /* 040: free lev2 blocks */
     struct ste      *pm_stpa;       /* 040: ST phys addr */

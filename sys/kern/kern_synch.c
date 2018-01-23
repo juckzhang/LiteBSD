@@ -57,6 +57,7 @@ int     lbolt;              /* once a second sleep address */
 
 /*
  * Force switch among equal priority processes every 100ms.
+ * 标记需要重新调度进程，没隔100ms调用一次
  */
 /* ARGSUSED */
 void
@@ -155,6 +156,7 @@ fixpt_t ccpu = 0.95122942450071400909 * FSCALE;     /* exp(-1/20) */
 
 /*
  * Recompute process priorities, every hz ticks.
+ * 重新计算每个进程的优先级
  */
 /* ARGSUSED */
 void
@@ -657,6 +659,7 @@ setrunnable(p)
  * Compute the priority of a process when running in user mode.
  * Arrange to reschedule if the resulting priority is better
  * than that of the current process.
+ * 计算进程优先级的算法: 用户进程最低优先级 + 最近平均cpu使用时间 / 4 + 2 * 用户配置的调整参数
  */
 void
 resetpriority(p)
